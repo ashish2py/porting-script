@@ -70,7 +70,7 @@ def dataporting():
     import datetime
     date = datetime.datetime.now().strftime("%d-%m-%Y")
 
-    with open('porting_assessment_csv_unit_1_'+date+'.csv', 'w') as csvfile:
+    with open('porting_ell_mobile_1_'+date+'.csv', 'w') as csvfile:
         fieldnames = ['course_id','course_name','unit_id','unit_name','unit_grade','topic_id','topic_name','lesson_id','lesson_tag','lesson_name','lesson_description','lesson_level','lesson_grade','resource_available','resource_path','resource_name','practice_available','practice_name','practice_questions','assessment_available','assessment_id','assessment_name','assessment_questions','assessment_score','microstandard']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter='\t',
                             quotechar='"', quoting=csv.QUOTE_ALL)
@@ -105,7 +105,7 @@ def dataporting():
         }
 
         lesson_counter = 0
-        course = Course.objects.get(id=384)
+        course = Course.objects.get(id=715)
         # units = course.course_units.all()
         units = course.course_units.all()
 
