@@ -13,6 +13,7 @@ from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from apps.content.models import *
 from apps.curator.models import *
 
+
 def get_skill_from_lesson_title(lesson_title):
     lesson_title = lesson_title.lower()
 
@@ -65,13 +66,19 @@ def dataporting():
     '''
 
     import csv
-
     writer = None
     import datetime
     date = datetime.datetime.now().strftime("%d-%m-%Y")
 
+    lesson_instruction_data = None    
+    with open('sound_new.json') as sound_data_file:    
+        lesson_instruction_data = json.load(sound_data_file)
+        # print data['e4c53a85-c775-4c79-9f12-649fa1ad84d5']['sound']
+        # pprint(data)
+
+
     with open('porting_ell_mobile_1_'+date+'.csv', 'w') as csvfile:
-        fieldnames = ['course_id','course_name','unit_id','unit_name','unit_grade','topic_id','topic_name','lesson_id','lesson_tag','lesson_name','lesson_description','lesson_level','lesson_grade','resource_available','resource_path','resource_name','practice_available','practice_name','practice_questions','assessment_available','assessment_id','assessment_name','assessment_questions','assessment_score','microstandard']
+        fieldnames = ['course_id','course_name','unit_id','unit_name','unit_grade','topic_id','topic_name','lesson_id','lesson_tag','lesson_name','lesson_description','lesson_level','lesson_grade','resource_available','resource_path','resource_name','practice_available','practice_name','practice_questions','assessment_available','assessment_id','assessment_name','assessment_questions','assessment_score','microstandard','lesson_intro']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames, delimiter='\t',
                             quotechar='"', quoting=csv.QUOTE_ALL)
         writer.writeheader()
@@ -102,6 +109,7 @@ def dataporting():
             'assessment_questions':[],
             'assessment_score':'assessment_score',
             'microstandard':'microstandard',
+            'lesson_intro':'lesson_intro',
         }
 
         lesson_counter = 0
@@ -132,16 +140,28 @@ def dataporting():
                     sys.stdout.write("\rlesson processing # :%d"%lesson_counter)
                     sys.stdout.flush()
 
+                    lesson_name = (lesson.name).encode('utf-8')
+
                     dict_head['lesson_id']=lesson.uuid
-                    dict_head['lesson_name']=(lesson.name).encode('utf-8')
+                    dict_head['lesson_name']=lesson_name
                     dict_head['lesson_description']=(lesson.desc).encode('utf-8')
                     dict_head['lesson_level']=lesson.difficulty.level
                     dict_head['lesson_grade']=grade
-                    dict_head['lesson_tag']=get_skill_from_lesson_title(lesson.name).encode('utf-8')
+                    
                     dict_head['microstandard']=lesson.microstandard.name
+                    
+                    if 'Block Assessment' in lesson_name or 'Phonics' in lesson_name or 'Writing' in lesson_name or 'Alphabetic Principle' in lesson_name or 'Vocabulary - Syntax - Describing coloured objects (vehicles)' in lesson_name or 'Double Letters' in lesson_name or 'Diphthongs' in lesson_name or 'Vowels' in lesson_name or "Reading - Print Awareness - How to use a book" in lesson_name or "Grammar - Syntax - Describing coloured objects (clothes)" in lesson_name:                        
+                        dict_head['lesson_tag'] = "No tag"
+                    else:                    
+                        dict_head['lesson_tag']=get_skill_from_lesson_title(lesson.name).encode('utf-8')
+
+                    try:
+                        dict_head['lesson_intro']=lesson_instruction_data[lesson.uuid]
+                    except Exception as e:
+                        dict_head['lesson_intro']="No sound"
 
                     # RESOURCE
-                    #assuming only one resource attached
+                    #assuming only one resource available
                     if lesson.resources.last():
                         dict_head['resource_available']=True
                         dict_head['resource_path']=lesson.resources.last().path
@@ -158,7 +178,8 @@ def dataporting():
                     assessment = lesson.assessments.last()
 
                     # print ('in assessment', lesson_assessments_ids)
-                    assessment_question_ids = AssessmentQuestions.objects.filter(assessment_id__in=lesson_assessments_ids).values_list('question_id', flat=True)
+                    assessment_question_ids = AssessmentQuestions.objects.filter(assessment_id__in=lesson_assessments_ids).values_list('question_id', flat=True).order_by('rank')
+
 
                     practice_question_ids = Question.objects.filter(microstandard=lesson.microstandard).exclude(id__in=assessment_question_ids).values_list('id',flat=True)
 
@@ -196,3 +217,4 @@ def dataporting():
 if __name__ == "__main__":
     ''' .. actual code starts here ..'''
     dataporting()
+    # from pprint import pprint
